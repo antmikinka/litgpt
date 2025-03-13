@@ -56,6 +56,9 @@ class Config:
     n_query_groups: Optional[int] = None
     attn_bias: bool = False
     attention_scores_scalar: Optional[int] = None
+    # credit smpanaro
+    # Allow injecting externally defined Linear layers.
+    _linear_class: Literal["nn.Linear", "ClusterFriendlyLinear"] = "Linear"
     sliding_window_size: Optional[int] = None
     sliding_window_layer_placing: Optional[Literal["all", "interleaved"]] = None
     # if `attention_logit_softcapping` is used, cannot use optimized
@@ -157,6 +160,12 @@ class Config:
         import litgpt.model
         return getattr(litgpt.model, self.mlp_class_name)
 
+    # credit to smpanaro
+    @property
+    def linear_class(self) -> Type:
+        # `self._linear_class` cannot be the type to keep the config json serializable
+        return getattr(litgpt.model, self._linear_class)
+
     @property
     def norm_class(self) -> Type:
         # `self.norm_class_name` cannot be the type to keep the config serializable
@@ -175,8 +184,11 @@ class Config:
             # Table 5 caption in the OLMo paper shows this - https://aclanthology.org/2024.acl-long.841
             return partial(torch.nn.LayerNorm, elementwise_affine=False)
 
-        return getattr(torch.nn, self.norm_class_name)
+        return getattr(torch.nn, self.norm_class_name)@property
+        
+        
 
+    
 
 ########################
 # Stability AI StableLM
